@@ -1,172 +1,371 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const canvas = document.createElement("canvas");
-    canvas.id = "interaction-canvas";
-    Object.assign(canvas.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        zIndex: "10000" // Above snow canvas (9999)
-    });
-    document.body.appendChild(canvas);
+    
+    
 
-    const ctx = canvas.getContext("2d");
-    let width, height;
 
-    const resize = () => {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-    };
-    window.addEventListener("resize", resize);
-    resize();
+    
+    const header = document.querySelector('.site-header');
+    if (header) {
+        let lastScroll = 0;
+        let ticking = false;
 
-    const particles = [];
-    // Limit particles for performance
-    const maxParticles = 100;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const currentScroll = window.pageYOffset;
 
-    // Track mouse/touch position
-    const mouse = { x: null, y: null };
+                    
+                    if (currentScroll > 50) {
+                        header.classList.add('scrolled');
+                    } else {
+                        header.classList.remove('scrolled');
+                    }
 
-    // Function to create particles
-    function createParticle(x, y) {
-        // Create 2-3 particles per event for a denser "fog" feel
-        for (let i = 0; i < 2; i++) {
-            particles.push({
-                x: x,
-                y: y,
-                size: Math.random() * 8 + 4, // Variable size for depth
-                speedX: (Math.random() - 0.5) * 1.5, // Drift left/right
-                speedY: (Math.random() - 0.5) * 1.5, // Drift up/down
-                opacity: 0.5 + Math.random() * 0.3, // Start opacity
-                shrink: 0.01 + Math.random() * 0.01 // Fade speed
+                    
+                    if (currentScroll <= 0) {
+                        header.classList.remove('hidden');
+                    } else if (currentScroll > lastScroll && !header.classList.contains('hidden') && currentScroll > 100) {
+                        
+                        const nav = document.querySelector('.site-nav');
+                        if (!nav || !nav.classList.contains('open')) {
+                            header.classList.add('hidden');
+                        }
+                    } else if (currentScroll < lastScroll && header.classList.contains('hidden')) {
+                        
+                        header.classList.remove('hidden');
+                    }
+
+                    lastScroll = currentScroll;
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    }
+
+    
+        
+        if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        
+        const revealElements = document.querySelectorAll('.reveal-on-scroll');
+        revealElements.forEach(el => {
+            gsap.fromTo(el,
+                { y: 50, opacity: 0 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1.2,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 85%", 
+                        toggleActions: "play none none reverse" 
+                    }
+                }
+            );
+        });
+
+        
+        const staggerContainers = document.querySelectorAll('.reveal-stagger');
+        staggerContainers.forEach(container => {
+            const children = container.children;
+            gsap.fromTo(children,
+                { y: 40, opacity: 0 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    stagger: 0.15,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: container,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        
+        const imageWrappers = document.querySelectorAll('.services-icon, .showcase-image');
+        imageWrappers.forEach(wrapper => {
+            const img = wrapper.querySelector('img, video, i');
+            if (!img) return;
+
+            gsap.fromTo(img,
+                { scale: 1.2 },
+                {
+                    scale: 1,
+                    duration: 1.5,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: wrapper,
+                        start: "top 90%",
+                        scrub: 1 
+                    }
+                }
+            );
+        });
+
+    
+        const menuToggle = document.querySelector('.menu-toggle');
+        const siteNav = document.querySelector('.site-nav');
+
+        if (menuToggle && siteNav) {
+            menuToggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menuToggle.classList.toggle('active');
+                siteNav.classList.toggle('open');
+                const isExpanded = menuToggle.classList.contains('active');
+                menuToggle.setAttribute('aria-expanded', isExpanded);
+            });
+
+            
+            document.addEventListener('click', function (event) {
+                if (siteNav.classList.contains('open') &&
+                    !siteNav.contains(event.target) &&
+                    !menuToggle.contains(event.target)) {
+                    menuToggle.classList.remove('active');
+                    siteNav.classList.remove('open');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            
+            const navLinks = siteNav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    menuToggle.classList.remove('active');
+                    siteNav.classList.remove('open');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                });
             });
         }
-    }
 
-    // Mouse Events
-    window.addEventListener("mousemove", (e) => {
-        mouse.x = e.x;
-        mouse.y = e.y;
-        createParticle(mouse.x, mouse.y);
-    });
+    
+    const counters = document.querySelectorAll('.counter');
 
-    // Touch Events
-    window.addEventListener("touchmove", (e) => {
-        // Prevent scrolling while generating effect if desired? 
-        // No, let's keep scrolling natural.
-        const touch = e.touches[0];
-        mouse.x = touch.clientX;
-        mouse.y = touch.clientY;
-        createParticle(mouse.x, mouse.y);
-    });
+    if (counters.length > 0) {
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const counter = entry.target;
+                        const target = parseInt(counter.getAttribute('data-target')) || 0;
+                        const duration = 2000; 
+                        const stepTime = 16; 
+                        const totalSteps = duration / stepTime;
+                        let currentStep = 0;
 
-    // Handle touch start to spawn immediately
-    window.addEventListener("touchstart", (e) => {
-        const touch = e.touches[0];
-        mouse.x = touch.clientX;
-        mouse.y = touch.clientY;
-        createParticle(mouse.x, mouse.y);
-    });
+                        const updateCounter = () => {
+                            currentStep++;
+                            
+                            const progress = currentStep / totalSteps;
+                            const easeOutQuad = progress * (2 - progress);
+                            const currentVal = Math.round(easeOutQuad * target);
 
-    function animate() {
-        ctx.clearRect(0, 0, width, height);
+                            counter.innerText = currentVal;
 
-        for (let i = 0; i < particles.length; i++) {
-            const p = particles[i];
+                            if (currentStep < totalSteps) {
+                                setTimeout(updateCounter, stepTime);
+                            } else {
+                                counter.innerText = target;
+                            }
+                        };
 
-            p.x += p.speedX;
-            p.y += p.speedY;
-            p.opacity -= p.shrink;
-            p.size -= 0.05; // Slowly shrink size too
+                        updateCounter();
+                        
+                        obs.unobserve(counter);
+                    }
+                });
+            }, { threshold: 0.3 });
 
-            if (p.opacity <= 0 || p.size <= 0) {
-                particles.splice(i, 1);
-                i--;
-            } else {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
-
-                // Optional: Add a subtle blur for "fog" look
-                // Note: shadowBlur can be expensive on mobile, keeping it minimal or removing if laggy
-                // ctx.shadowBlur = 5;
-                // ctx.shadowColor = "white"; 
-
-                ctx.fill();
-                // ctx.shadowBlur = 0; // Reset
-            }
+            counters.forEach(counter => {
+                observer.observe(counter);
+            });
         }
 
-        // Safety cap
-        if (particles.length > maxParticles) {
-            particles.splice(0, particles.length - maxParticles);
-        }
+    
 
-        requestAnimationFrame(animate);
-    }
+        
+        const magneticBtns = document.querySelectorAll('.btn');
+        magneticBtns.forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
 
-    animate();
-});
+                gsap.to(btn, {
+                    x: x * 0.3,
+                    y: y * 0.3,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
 
-// --- Smart Navbar Scroll Logic ---
-document.addEventListener("DOMContentLoaded", function () {
-    const header = document.querySelector('.site-header');
-    if (!header) return;
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, {
+                    x: 0,
+                    y: 0,
+                    duration: 0.5,
+                    ease: 'elastic.out(1, 0.3)'
+                });
+            });
+        });
 
-    let lastScroll = 0;
+        
+        const tiltElements = document.querySelectorAll('.service-box, .project-card, .featured-slide');
+        tiltElements.forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                
+                const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+                const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
 
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset;
+                
+                gsap.to(el, {
+                    rotationY: x * 10,
+                    rotationX: -y * 10,
+                    transformPerspective: 1000,
+                    ease: 'power1.out',
+                    duration: 0.4
+                });
+            });
 
-        // Add background when scrolled past 50px
-        if (currentScroll > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
+            el.addEventListener('mouseleave', () => {
+                gsap.to(el, {
+                    rotationY: 0,
+                    rotationX: 0,
+                    ease: 'power3.out',
+                    duration: 0.6
+                });
+            });
+        });
 
-        // Smart hide/show logic
-        if (currentScroll <= 0) {
-            header.classList.remove('hidden');
-        } else if (currentScroll > lastScroll && !header.classList.contains('hidden') && currentScroll > 100) {
-            // Scrolling down - hide header (if mobile menu isn't open)
-            const nav = document.querySelector('.site-nav');
-            if (!nav || !nav.classList.contains('open')) {
-                header.classList.add('hidden');
-            }
-        } else if (currentScroll < lastScroll && header.classList.contains('hidden')) {
-            // Scrolling up - show header
-            header.classList.remove('hidden');
-        }
+    
+        if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
 
-        lastScroll = currentScroll;
-    });
-});
+        gsap.registerPlugin(ScrollTrigger);
 
-// --- Cinematic Scroll Reveal System ---
-document.addEventListener("DOMContentLoaded", function () {
-    const revealElements = document.querySelectorAll('.reveal-on-scroll, .reveal-stagger');
+        const showcase = document.querySelector('.featured-showcase');
+        const slides = document.querySelectorAll('.featured-slide');
+        const progressFill = document.getElementById('scrollProgressFill');
 
-    const revealOptions = {
-        threshold: 0.15, // Trigger when 15% visible
-        rootMargin: "0px 0px -50px 0px" // Trigger slightly before it hits the bottom
-    };
+        if (!showcase || slides.length === 0) return;
 
-    const revealObserver = new IntersectionObserver(function (entries, observer) {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('active');
-                // Optional: Stop observing once revealed so it doesn't animate out and in repeatedly
-                // observer.unobserve(entry.target); 
+        let mm = gsap.matchMedia();
+
+        mm.add("(min-width: 769px)", () => {
+            ScrollTrigger.create({
+                trigger: showcase,
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    if (progressFill) {
+                        progressFill.style.width = (self.progress * 100) + '%';
+                    }
+                }
+            });
+
+            slides.forEach((slide, index) => {
+                if (index < slides.length - 1) {
+                    gsap.to(slide, {
+                        scale: 0.92,
+                        opacity: 0.5,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: slides[index + 1],
+                            start: "top bottom",
+                            end: "top top",
+                            scrub: 1
+                        }
+                    });
+                }
+            });
+        });
+
+        mm.add("(max-width: 768px)", () => {
+            slides.forEach((slide) => {
+                gsap.fromTo(slide,
+                    { opacity: 0, y: 60, scale: 0.95 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 1.2,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: slide,
+                            start: "top 85%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+                
+                const slideContent = slide.querySelector('.slide-content');
+                if (slideContent) {
+                    gsap.fromTo(slideContent,
+                        { opacity: 0, y: 30 },
+                        {
+                            opacity: 1,
+                            y: 0,
+                            duration: 1,
+                            delay: 0.2,
+                            ease: "power2.out",
+                            scrollTrigger: {
+                                trigger: slide,
+                                start: "top 80%",
+                                toggleActions: "play none none reverse"
+                            }
+                        }
+                    );
+                }
+            });
+        });
+
+        // ==========================================
+        // LUXURY SCROLL EFFECTS
+        // ==========================================
+
+        // Image Parallax Effect
+        const parallaxImages = document.querySelectorAll('.proj-card img, .slide-image img, .service-box img');
+        parallaxImages.forEach(img => {
+            gsap.fromTo(img, 
+                {
+                    yPercent: -15,
+                    scale: 1.05
+                },
+                {
+                    yPercent: 15,
+                    scale: 1.05,
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: img.parentElement,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                }
+            );
+        });
+
+        // Subtle Scroll Skew Effect for Luxury Feel
+        let proxy = { skew: 0 },
+            skewSetter = gsap.quickSetter(".proj-card, .service-box, .featured-slide", "skewY", "deg"),
+            clamp = gsap.utils.clamp(-5, 5); 
+
+        ScrollTrigger.create({
+            onUpdate: (self) => {
+                let skew = clamp(self.getVelocity() / -300);
+                if (Math.abs(skew) > Math.abs(proxy.skew)) {
+                    proxy.skew = skew;
+                    gsap.to(proxy, { skew: 0, duration: 0.8, ease: "power3", overwrite: true, onUpdate: () => skewSetter(proxy.skew) });
+                }
             }
         });
-    }, revealOptions);
-
-    revealElements.forEach(el => {
-        revealObserver.observe(el);
-    });
+        
+        // Ensure reveal triggers correctly with lenis
+        ScrollTrigger.refresh();
 });
