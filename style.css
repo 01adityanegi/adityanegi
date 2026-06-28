@@ -1,13 +1,8 @@
 :root {
-
   --bg-color: #000000;
-
   --bg-secondary: #0b0b0b;
-
   --text-primary: #e6f1ff;
-
   --text-secondary: #8892b0;
-
   --accent-color: #ff6b00;
   --accent-secondary: #0070f3;
   --accent-glow: rgba(255, 107, 0, 0.4);
